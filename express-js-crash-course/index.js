@@ -1,4 +1,11 @@
 import express from "express";
+import {
+  checkSchema,
+  matchedData,
+  query,
+  validationResult,
+} from "express-validator";
+import { createUserValidationSchema } from "./schema/validationSchema.js";
 
 const app = express();
 
@@ -39,7 +46,8 @@ const loggingMiddleWare = (request, response, next) => {
   next();
 };
 
-app.use(loggingMiddleWare); // simple usage of global middleware
+app.use(loggingMiddleWare);
+// simple usage of global middleware
 
 // Resolve Index by user id middleware
 
@@ -57,50 +65,82 @@ const resolveIndexByUserIdMiddleware = (request, response, next) => {
 
 // Create a GET API to get all the users
 
-app.get("/api/users", (req, res) => {
-  res.status(200).json(mockUsers);
-});
+// app.get("/api/users" ,  (req, res) => {
+//   res.status(200).json(mockUsers);
+// });
 
 // Create a GET API to get a particular user with params concept
 
-app.get("/api/users/:id", (req, res) => {
-  const parsedID = parseInt(req.params.id);
-  if (isNaN(parsedID)) return res.status(400).send({ message: "Bad Request" }); // Case 1
-  const findUser = mockUsers.find((user) => user.id === parsedID);
-  if (findUser) {
-    res.status(200).json(findUser); // Case 2
-  } else {
-    res.status(404).send({ message: "User not found" }); // Case 3
-  }
-});
+// app.get("/api/users/:id", (req, res) => {
+//   if (!req.params.id) return res.status(400).send({ message: "Bad Request" });
+//   const parsedID = parseInt(req.params.id);
+//   if (isNaN(parsedID)) return res.status(400).send({ message: "Bad Request" }); // Case 1
+//   const findUser = mockUsers.find((user) => user.id === parsedID);
+//   if (findUser) {
+//     res.status(200).json(findUser); // Case 2
+//   } else {
+//     res.status(404).send({ message: "User not found" }); // Case 3
+//   }
+// });
 
 // Create a GET API and apply some filters with query params concept
 
 // Apply a search by keyword filter
 
-app.get("/api/users", (req, res) => {
-  const {
-    params,
-    query: { filter, value },
-  } = req;
+app.get(
+  "/api/users",
+  query("filter")
+    .isString()
+    .notEmpty()
+    .withMessage("Must not be empty")
+    .isLength({ min: 3, max: 10 })
+    .withMessage("Must be at least 3-10 characters"),
+  (req, res) => {
+    const result = validationResult(req);
+    console.log(result);
+    const {
+      params,
+      query: { filter, value },
+    } = req;
 
-  if (!filter && !value) return res.status(200).json(mockUsers);
+    if (!filter && !value) return res.status(200).json(mockUsers);
 
-  if (filter && value) {
-    const appliedFilter = mockUsers.filter((user) =>
-      user[filter].toLowerCase().includes(value.toLowerCase())
-    );
-    res.status(200).json(appliedFilter);
+    if (filter && value) {
+      const appliedFilter = mockUsers.filter((user) =>
+        user[filter].toLowerCase().includes(value.toLowerCase())
+      );
+      res.status(200).json(appliedFilter);
+    }
   }
-});
+);
 
 // POST Method to add a user
 
-app.post("/api/users", (req, res) => {
-  const { body } = req;
-  mockUsers.push({ id: mockUsers.length + 1, ...body });
-  res.status(201).json(mockUsers);
-});
+app.post(
+  "/api/users",
+  // [
+  //   body("username")
+  //     .notEmpty()
+  //     .withMessage("Username cannot be empty")
+  //     .isLength({ min: 5, max: 32 })
+  //     .withMessage("Username must be between 5-32 characters")
+  //     .isString()
+  //     .withMessage("Username must be string"),
+  //   body("displayName").notEmpty(),
+  // ],
+  checkSchema(createUserValidationSchema),
+  (req, res) => {
+    const result = validationResult(req);
+    if (!result.isEmpty()) {
+      return res.status(400).send({ errors: result.array() });
+    }
+
+    const data = matchedData(req);
+
+    mockUsers.push({ id: mockUsers.length + 1, ...data });
+    res.status(201).json(mockUsers);
+  }
+);
 
 // PATCH Method to update a particular detail from a particular user of DB
 
