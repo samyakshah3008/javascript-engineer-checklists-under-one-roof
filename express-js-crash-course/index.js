@@ -32,6 +32,29 @@ let mockUsers = [
 
 app.use(express.json());
 
+// Logging middleware -- Create a simple function which just logs the request method and the request url
+
+const loggingMiddleWare = (request, response, next) => {
+  console.log(`${request.method} - ${request.url}`);
+  next();
+};
+
+app.use(loggingMiddleWare); // simple usage of global middleware
+
+// Resolve Index by user id middleware
+
+const resolveIndexByUserIdMiddleware = (request, response, next) => {
+  const { params, body } = request;
+  const parsedID = parseInt(params.id);
+  if (isNaN(parsedID))
+    return response.status(400).send({ message: "Bad Request" }); // Case 1
+  const findUserIndex = mockUsers.findIndex((user) => user.id === parsedID);
+  if (findUserIndex == -1)
+    return response.status(404).send({ message: "Not found" });
+  request.findUserIndex = findUserIndex;
+  next();
+};
+
 // Create a GET API to get all the users
 
 app.get("/api/users", (req, res) => {
@@ -81,38 +104,27 @@ app.post("/api/users", (req, res) => {
 
 // PATCH Method to update a particular detail from a particular user of DB
 
-app.patch("/api/users/:id", (req, res) => {
-  const { params, body } = req;
-  const parsedID = parseInt(params.id);
-  if (isNaN(parsedID)) return res.status(400).send({ message: "Bad Request" }); // Case 1
-  const findUserIndex = mockUsers.findIndex((user) => user.id === parsedID);
-  mockUsers[findUserIndex] = { ...mockUsers[findUserIndex], ...body };
-  res.status(200).json(mockUsers[findUserIndex]);
+app.patch("/api/users/:id", resolveIndexByUserIdMiddleware, (req, res) => {
+  const { body } = req;
+
+  mockUsers[req.findUserIndex] = { ...mockUsers[req.findUserIndex], ...body };
+  res.status(200).json(mockUsers[req.findUserIndex]);
 });
 
 // PUT Method to update whole detail from a particular user of DB
 
-app.put("/api/users/:id", (req, res) => {
-  const { params, body } = req;
-  const parsedID = parseInt(params.id);
-  if (isNaN(parsedID)) return res.status(400).send({ message: "Bad Request" }); // Case 1
-  const findUserIndex = mockUsers.findIndex((user) => user.id === parsedID);
-  mockUsers[findUserIndex] = { ...body };
-  res.status(200).json(mockUsers[findUserIndex]);
+app.put("/api/users/:id", resolveIndexByUserIdMiddleware, (req, res) => {
+  const { body } = req;
+
+  mockUsers[req.findUserIndex] = { ...body };
+  res.status(200).json(mockUsers[req.findUserIndex]);
 });
 
 // DELETE Method to remove a user from DB
 
-app.delete("/api/users/:id", (req, res) => {
-  const parsedID = parseInt(req.params.id);
-  if (isNaN(parsedID)) return res.status(400).send({ message: "Bad Request" });
-  const findUserIndex = mockUsers.findIndex((user) => user.id === parsedID);
-  if (findUserIndex == -1) {
-    return res.status(404).send({ message: "User not found" });
-  } else {
-    mockUsers.splice(findUserIndex, 1);
-    return res.status(200).json(mockUsers);
-  }
+app.delete("/api/users/:id", resolveIndexByUserIdMiddleware, (req, res) => {
+  mockUsers.splice(req.findUserIndex, 1);
+  return res.status(200).json(mockUsers);
 });
 
 app.listen(PORT, () => {
