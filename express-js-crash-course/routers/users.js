@@ -9,6 +9,7 @@ import { mockUsers } from "../constants/users.js";
 import { resolveIndexByUserIdMiddleware } from "../middlewares/users.js";
 import { User } from "../schema/user.js";
 import { createUserValidationSchema } from "../schema/validationSchema.js";
+import { hashPassword } from "../utils/helpers.js";
 
 const router = Router();
 
@@ -75,6 +76,9 @@ router.post(
       return res.status(400).send({ errors: result.array() });
     }
     // const data = matchedData(req.body);
+    console.log(req.body, "before");
+    req.body.password = hashPassword(req.body.password);
+    console.log(req.body, "after");
     const newUser = new User(req.body);
     try {
       const saveUser = await newUser.save();

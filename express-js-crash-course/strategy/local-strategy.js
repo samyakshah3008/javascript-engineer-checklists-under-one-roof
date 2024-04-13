@@ -1,6 +1,7 @@
 import passport from "passport";
 import { Strategy } from "passport-local";
 import { User } from "../schema/user.js";
+import { comparePassword } from "../utils/helpers.js";
 
 passport.serializeUser((user, done) => {
   done(null, user.id);
@@ -24,9 +25,12 @@ export default passport.use(
   new Strategy(async (username, password, done) => {
     try {
       //   const findUser = mockUsers.find((user) => user.username === username); // mock
-      const findUser = await User.findOne(username);
+      const findUser = await User.findOne({ username });
       if (!findUser) throw new Error("User not found");
-      if (findUser.password !== password) {
+      //   if (findUser.password !== password) {
+      //     throw new Error("Invalid Credentials");
+      //   }
+      if (!comparePassword(password, findUser.password)) {
         throw new Error("Invalid Credentials");
       }
       done(null, findUser);
