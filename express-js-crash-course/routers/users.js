@@ -7,6 +7,7 @@ import {
 } from "express-validator";
 import { mockUsers } from "../constants/users.js";
 import { resolveIndexByUserIdMiddleware } from "../middlewares/users.js";
+import { User } from "../schema/user.js";
 import { createUserValidationSchema } from "../schema/validationSchema.js";
 
 const router = Router();
@@ -62,6 +63,25 @@ router.post(
 
     mockUsers.push({ id: mockUsers.length + 1, ...data });
     res.status(201).json(mockUsers);
+  }
+);
+
+router.post(
+  "/api/new-users",
+  checkSchema(createUserValidationSchema),
+  async (req, res) => {
+    const result = validationResult(req);
+    if (!result.isEmpty()) {
+      return res.status(400).send({ errors: result.array() });
+    }
+    // const data = matchedData(req.body);
+    const newUser = new User(req.body);
+    try {
+      const saveUser = await newUser.save();
+      return res.status(201).send(saveUser);
+    } catch (err) {
+      return res.status(400).send({ msg: err });
+    }
   }
 );
 
