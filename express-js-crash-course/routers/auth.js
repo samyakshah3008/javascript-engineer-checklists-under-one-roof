@@ -1,5 +1,7 @@
 import { Router } from "express";
+import passport from "passport";
 import { mockUsers } from "../constants/users.js";
+import "../strategy/local-strategy.js";
 
 const router = Router();
 
@@ -31,9 +33,17 @@ router.get("/api/auth/status", (req, res) => {
   req.sessionStore.get(req.sessionID, (err, session) => {
     console.log(session, "session");
   });
-  return req.session.user
-    ? res.status(200).send(req.session.user)
+  return req?.session?.passport?.user
+    ? res.status(200).send(req.session.passport.user)
     : res.status(403).send({ msg: "unauthorized" });
 });
+
+router.post(
+  "/api/passport-auth",
+  passport.authenticate("local"),
+  (req, res) => {
+    res.status(200).send({ msg: "success" });
+  }
+);
 
 export default router;
