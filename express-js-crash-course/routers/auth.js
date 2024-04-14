@@ -1,7 +1,8 @@
 import { Router } from "express";
 import passport from "passport";
 import { mockUsers } from "../constants/users.js";
-import "../strategy/local-strategy.js";
+// import "../strategy/local-strategy.js";
+import "../strategy/discord-strategy.js";
 
 const router = Router();
 
@@ -43,6 +44,16 @@ router.post(
   passport.authenticate("local"),
   (req, res) => {
     res.status(200).send({ msg: "success" });
+  }
+);
+
+router.get("/api/auth/discord", passport.authenticate("discord"));
+
+router.get(
+  "/api/auth/discord/redirect",
+  passport.authenticate("discord"),
+  (req, res) => {
+    res.sendStatus(200);
   }
 );
 

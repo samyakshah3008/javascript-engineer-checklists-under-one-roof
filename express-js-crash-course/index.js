@@ -5,7 +5,7 @@ import session from "express-session";
 import mongoose from "mongoose";
 import passport from "passport";
 import routes from "./routers/index.js";
-import "./strategy/local-strategy.js";
+// import "./strategy/local-strategy.js";
 
 const app = express();
 
